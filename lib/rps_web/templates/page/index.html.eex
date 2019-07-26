@@ -1,0 +1,35 @@
+<div class="jumbotron">
+  <h1 class="display-4"><%= gettext "Welcome to %{name}!", name: "Rock Paper Scissors" %></h1>
+
+  <div class="input-group mb-3">
+    <input type="text" id="playerName" class="form-control bg-white" placeholder="What's your name?">
+  </div>
+
+  <hr class="my-4">
+  <h3>Create room or join existing one</h3>
+
+  <a class="btn btn-primary" id="join" href="/room/new" role="button">Create room</a>
+
+</div>
+
+<script>
+$(document).ready(function() {
+  let playerName = $("#playerName");
+
+  playerName.val(localStorage.getItem('name'));
+
+  playerName.on('keyup keypress', function(){
+      localStorage.removeItem('name');
+      localStorage.setItem('name', $(this).val());
+  });
+
+  $("#join").on('click', function() {
+    if(playerName.val() === undefined || playerName.val() === ""){
+        alert("Insert name before play");
+        return false;
+    }
+
+    return true;
+  })
+})
+</script>

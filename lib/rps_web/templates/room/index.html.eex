@@ -1,0 +1,112 @@
+<div class="container">
+
+<div class="row">
+    <div class="col-md-6 text-center">
+        Player 1: <div id="p1" style="font-size: 2rem;">waiting</div>
+    </div>
+    <div class="col-md-6 text-center">
+        Player 2: <div id="p2" style="font-size: 2rem;">waiting</div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 text-center">
+        <button id="startRound" class="btn btn-lg btn-success">Start Round</button>
+    </div>
+</div>
+
+<div class="row mt-2" id="choiceRow">
+
+<div class="col-md-4">
+<img class="img-responsive choice"
+ data-choice="rock"
+ src='<%= Routes.static_path(@conn, "/images/rock.png") %>'>
+</div>
+
+<div class="col-md-4">
+<img class="img-responsive choice"
+ data-choice="paper"
+ src='<%= Routes.static_path(@conn, "/images/paper.png") %>'>
+</div>
+
+<div class="col-md-4">
+<img class="img-responsive choice"
+ data-choice="scissors"
+ src='<%= Routes.static_path(@conn, "/images/scissors.png") %>'>
+</div>
+
+</div>
+
+<div class="row mt-2">
+<div class="col-md-12 text-center"><h1 id="round_result" class=""></h1></div>
+</div>
+
+</div>
+
+<script>
+(function() {
+  let players = {player1: null, player2: null};
+  let name = window.localStorage.getItem("name");
+  let s = window.Socket;
+  let channel = s.channel("room:<%= @room_name %>", {name: name});
+  let round = null;
+  let p1 = $("#p1");
+  let p2 = $("#p2");
+  let choiceRow = $("#choiceRow");
+  choiceRow.hide();
+
+  $("#startRound").on('click', function() {
+      channel.push("start_round", {});
+      $("#round_result").text("");
+  });
+
+  $(".choice").on('click', function(){
+     let c = $(this).data("choice");
+     channel.push("make_choice", {choice: c, round_id: round});
+     choiceRow.hide();
+  });
+
+  //Socket
+
+  channel.on("player_join", payload => {
+    players = update_players(players, payload);
+    p1.html(players.player1);
+    p2.html(players.player2);
+  });
+
+  channel.on("round_result", payload => {
+      if(payload.finish){
+          $("#round_result").toggleClass("text-success");
+          $("#round_result").text(payload.message);
+          $("#startRound").show();
+      } else {
+          $("#round_result").toggleClass("text-info");
+          $("#round_result").text(payload.message);
+      }
+  });
+
+  channel.on("round_start", payload => {
+       round = payload.round_id;
+       $("#startRound").hide();
+       choiceRow.show();
+  });
+
+  channel.on("make_choice", payload => {
+      console.log(payload)
+  });
+
+  channel.join()
+      .receive("ok", resp => { console.log("Joined successfully", resp) })
+      .receive("error", resp => { console.log("Unable to join", resp) });
+
+  channel.push("player_join", {room: "<%= @room_name %>", player: name});
+
+
+})();
+
+function update_players(players, payload) {
+  players.player1 = payload.p1;
+  players.player2 = payload.p2;
+  return players
+}
+</script>
