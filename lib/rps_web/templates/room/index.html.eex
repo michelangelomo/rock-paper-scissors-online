@@ -45,8 +45,12 @@
 
 <script>
 (function() {
-  let players = {player1: null, player2: null};
   let name = window.localStorage.getItem("name");
+  name = check_name(name);
+
+
+  let players = {player1: null, player2: null};
+
   let s = window.Socket;
   let channel = s.channel("room:<%= @room_name %>", {name: name});
   let round = null;
@@ -57,7 +61,6 @@
 
   $("#startRound").on('click', function() {
       channel.push("start_round", {});
-      $("#round_result").text("");
   });
 
   $(".choice").on('click', function(){
@@ -89,6 +92,7 @@
        round = payload.round_id;
        $("#startRound").hide();
        choiceRow.show();
+       $("#round_result").text("");
   });
 
   channel.on("make_choice", payload => {
@@ -97,7 +101,11 @@
 
   channel.join()
       .receive("ok", resp => { console.log("Joined successfully", resp) })
-      .receive("error", resp => { console.log("Unable to join", resp) });
+      .receive("error", resp => {
+        alert(resp.message);
+        window.location.href = "/";
+        console.log("Unable to join", resp)
+      });
 
   channel.push("player_join", {room: "<%= @room_name %>", player: name});
 
@@ -108,5 +116,14 @@ function update_players(players, payload) {
   players.player1 = payload.p1;
   players.player2 = payload.p2;
   return players
+}
+
+function check_name(name){
+    if(name === null || name === undefined){
+        name = prompt("Please enter your name", "")
+    }
+    localStorage.removeItem('name');
+    localStorage.setItem('name', name);
+    return name;
 }
 </script>

@@ -8,19 +8,24 @@ defmodule RpsWeb.RoomChannel do
 
     room = Repo.one(from r in Rps.Room, where: r.name == ^room_name)
 
-    case room do
-      nil ->
-        Repo.insert(%Rps.Room{name: room_name, player1: name})
-      _ ->
-        room
-        |> Ecto.Changeset.change(%{player2: name})
-        |> Repo.update()
+    case check_room(room) do
+      {:ok} ->
+        case room do
+          nil ->
+            Repo.insert(%Rps.Room{name: room_name, player1: name})
+          _ ->
+            room
+            |> Ecto.Changeset.change(%{player2: name})
+            |> Repo.update()
+        end
+
+        {:ok, socket
+              |> assign(:player_name, name)
+              |> assign(:room_id, room_name)
+        }
+      _ -> {:error, %{"message" => "room full"}}
     end
 
-    {:ok, socket
-          |> assign(:player_name, name)
-          |> assign(:room_id, room_name)
-    }
   end
 
   def handle_in("start_round", _args, socket) do
@@ -67,6 +72,15 @@ defmodule RpsWeb.RoomChannel do
     end
 
     {:noreply, socket}
+  end
+
+  defp check_room(room) do
+    IO.inspect(room)
+    if room != nil and room.player1 != nil and room.player2 != nil do
+      {:error}
+    else
+      {:ok}
+    end
   end
 
   defp whoami(room, player) do
